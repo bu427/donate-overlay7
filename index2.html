@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Donate Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0); /* พื้นหลังโปร่งใสสำหรับ OBS */
+            font-family: 'Kanit', sans-serif;
+        }
+
+        #donate-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 10px solid #ffcc00;
+            width: fit-content;
+            animation: slideIn 1s ease-out;
+            visibility: hidden; /* ซ่อนไว้ก่อนมีข้อมูล */
+        }
+
+        .name { color: #ffcc00; font-size: 32px; margin-right: 15px; }
+        .amount { color: #ffffff; font-size: 28px; }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="donate-container">
+        <div class="name" id="user-name">Loading...</div>
+        <div class="amount" id="user-amount"></div>
+    </div>
+
+    <script>
+        // วาง URL ที่ได้จาก Publish to web (CSV) ตรงนี้
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRU8uL7yDtj-tUEluvGndvQbS0FIXXFTxyM24atiP7Uj25ENsy2CwdgnXBSHEb3h0OOSVFA5gB3ySsw/pub?output=csv';
+
+        let lastData = "";
+
+        async function updateDonate() {
+            try {
+                const response = await fetch(sheetUrl);
+                const data = await response.text();
+                const rows = data.split('\n').map(row => row.split(','));
+                
+                // ดึงข้อมูลแถวสุดท้าย (Last Row)
+                const lastRow = rows[rows.length - 1];
+                const name = lastRow[0]; // คอลัมน์ A
+                const amount = lastRow[1]; // คอลัมน์ B
+
+                // ตรวจสอบว่าข้อมูลใหม่หรือไม่ เพื่อทำ Animation ใหม่
+                if (name + amount !== lastData) {
+                    const container = document.getElementById('donate-container');
+                    container.style.visibility = 'visible';
+                    document.getElementById('user-name').innerText = name;
+                    document.getElementById('user-amount').innerText = "฿" + amount;
+                    
+                    // Restart Animation
+                    container.style.animation = 'none';
+                    container.offsetHeight; 
+                    container.style.animation = null;
+                    
+                    lastData = name + amount;
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        // ตรวจสอบข้อมูลใหม่ทุกๆ 5 วินาที
+        setInterval(updateDonate, 5000);
+        updateDonate();
+    </script>
+</body>
+</html>
